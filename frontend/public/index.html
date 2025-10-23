@@ -1,0 +1,73 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>NLP Query Engine - Demo UI</title>
+    <style>
+      body { font-family: Arial, sans-serif; margin: 20px; }
+      .box { border: 1px solid #ddd; padding: 12px; margin-bottom: 12px; border-radius: 6px; }
+      input, textarea { width: 100%; padding:8px; margin-top:6px; }
+      button { padding:8px 12px; margin-top:8px; }
+      pre { background:#f7f7f7; padding:10px; border-radius:4px; }
+    </style>
+  </head>
+  <body>
+    <h1>NLP Query Engine — Demo UI</h1>
+
+    <div class="box">
+      <h3>1) Connect & Discover Schema</h3>
+      <input id="conn" placeholder="sqlite:///./sample.db" />
+      <button onclick="discover()">Discover Schema</button>
+      <pre id="schema_out"></pre>
+    </div>
+
+    <div class="box">
+      <h3>2) Upload Documents</h3>
+      <input id="files" type="file" multiple />
+      <button onclick="upload()">Upload & Process</button>
+      <pre id="upload_out"></pre>
+    </div>
+
+    <div class="box">
+      <h3>3) Query</h3>
+      <textarea id="query" rows="3" placeholder="Enter a question like: 'Show me Python developers'"></textarea>
+      <button onclick="runQuery()">Run Query</button>
+      <pre id="query_out"></pre>
+    </div>
+
+    <script>
+      async function discover(){
+        const conn = document.getElementById('conn').value;
+        const res = await fetch('/api/schema/discover', {
+          method: 'POST',
+          headers: {'Content-Type':'application/json'},
+          body: JSON.stringify({connection_string: conn})
+        });
+        const j = await res.json();
+        document.getElementById('schema_out').innerText = JSON.stringify(j, null, 2);
+      }
+
+      async function upload(){
+        const input = document.getElementById('files');
+        const files = input.files;
+        if(files.length===0){ alert('select files'); return; }
+        const form = new FormData();
+        for(let i=0;i<files.length;i++) form.append('files', files[i]);
+        const res = await fetch('/api/ingest/documents', { method:'POST', body: form });
+        const j = await res.json();
+        document.getElementById('upload_out').innerText = JSON.stringify(j, null, 2);
+      }
+
+      async function runQuery(){
+        const q = document.getElementById('query').value;
+        const res = await fetch('/api/query/', {
+          method:'POST',
+          headers: {'Content-Type':'application/json'},
+          body: JSON.stringify({query: q})
+        });
+        const j = await res.json();
+        document.getElementById('query_out').innerText = JSON.stringify(j, null, 2);
+      }
+    </script>
+  </body>
+</html>
